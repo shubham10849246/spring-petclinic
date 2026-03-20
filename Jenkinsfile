@@ -43,6 +43,63 @@ pipeline {
       }
     }
 
+
+    stage('Unit Tests (Soft Gate)') {
+      options { timeout(time: 10, unit: 'MINUTES') }
+      steps {
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          sh '''
+            mvn -B test
+          '''
+        }
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
+        }
+      }
+    }
+
+
+    stage('Functional Tests (Soft Gate)') {
+      options { timeout(time: 20, unit: 'MINUTES') }
+      steps {
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          sh '''
+            # Option 1: If you already have integration tests configured via Failsafe:
+            mvn -B verify -Pfunctional-tests
+          '''
+        }
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
+        }
+      }
+    }
+
+
+    stage('Performance Tests (Soft Gate)') {
+      options { timeout(time: 30, unit: 'MINUTES') }
+      steps {
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          sh '''
+            # Option 1: If you have a perf profile (Gatling/JMeter via Maven):
+            mvn -B verify -Pperformance-tests
+
+            # If you generate perf reports in a folder, keep them under:
+            # performance-results/
+          '''
+        }
+      }
+      post {
+        always {
+          archiveArtifacts artifacts: 'performance-results/**', allowEmptyArchive: true
+        }
+      }
+    }
+
+
     stage('Docker Build') {
       steps {
         sh '''
