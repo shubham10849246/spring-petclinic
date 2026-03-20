@@ -3,6 +3,7 @@ pipeline {
 
   options {
     timestamps()
+
     buildDiscarder(logRotator(numToKeepStr: '10'))
   }
 
@@ -13,10 +14,10 @@ pipeline {
     IMAGE_NAME   = "petclinic"
     IMAGE_TAG    = "${BUILD_NUMBER}"
 
-    // Kubernetes
-    //KUBECONFIG_PATH = "/home/jenkins/.kube/config"
-    //K8S_NAMESPACE   = "petclinic"
-    //EKS_CONTEXT     = "arn:aws:eks:ap-south-1:013461378686:cluster/petclinic-eks"
+    // Kubernetes (commented for now)
+    // KUBECONFIG_PATH = "/home/jenkins/.kube/config"
+    // K8S_NAMESPACE   = "petclinic"
+    // EKS_CONTEXT     = "arn:aws:eks:ap-south-1:013461378686:cluster/petclinic-eks"
   }
 
   stages {
@@ -68,3 +69,20 @@ pipeline {
         '''
       }
     }
+
+    // Deploy stages can be added back later when kubeconfig is ready
+    // stage('Deploy to EKS') { ... }
+    // stage('Verify Deployment') { ... }
+
+  } // ✅ closes stages
+
+  post {
+    success {
+      echo "✅ CI/CD SUCCESS: Image pushed to ECR (deploy stage skipped/commented)"
+    }
+    failure {
+      echo "❌ Pipeline failed – check logs above"
+    }
+  }
+
+} // ✅ closes pipeline
