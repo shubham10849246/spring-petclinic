@@ -56,7 +56,7 @@ pipeline {
       options { timeout(time: 15, unit: 'MINUTES') }
       steps {
         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          sh '''
+          sh '''#!/usr/bin/env bash
             set -euxo pipefail
             mvn -B test
           '''
@@ -76,7 +76,7 @@ pipeline {
       options { timeout(time: 30, unit: 'MINUTES') }
       steps {
         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          sh '''
+          sh '''#!/usr/bin/env bash
             set -euxo pipefail
             # Skip unit tests to avoid rerun during verify lifecycle
             mvn -B verify -Pfunctional-tests -DskipUnitTests=true
@@ -96,7 +96,7 @@ pipeline {
       options { timeout(time: 40, unit: 'MINUTES') }
       steps {
         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          sh '''
+          sh '''#!/usr/bin/env bash
             set -euxo pipefail
 
             if [ ! -f "${JMETER_PLAN}" ]; then
