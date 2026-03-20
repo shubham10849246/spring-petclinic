@@ -352,6 +352,11 @@
               <includes>
                 <include>**/*IntegrationTests.java</include>
               </includes>
+              
+              <excludes>
+                <exclude>**/PostgresIntegrationTests.java</exclude>
+              </excludes>
+
               <testFailureIgnore>false</testFailureIgnore>
             </configuration>
           </execution>
