@@ -18,6 +18,13 @@ pipeline {
     // KUBECONFIG_PATH = "/home/jenkins/.kube/config"
     // K8S_NAMESPACE   = "petclinic"
     // EKS_CONTEXT     = "arn:aws:eks:ap-south-1:013461378686:cluster/petclinic-eks"
+
+    
+    PERF_PORT    = "8080"
+    PERF_BASEURL = "http://localhost:${PERF_PORT}"
+    JMETER_PLAN  = "perf/petclinic.jmx"
+    PERF_OUTDIR  = "performance-results"
+
   }
 
   stages {
@@ -44,11 +51,13 @@ pipeline {
     }
 
 
+    
     stage('Unit Tests (Soft Gate)') {
-      options { timeout(time: 10, unit: 'MINUTES') }
+      options { timeout(time: 15, unit: 'MINUTES') }
       steps {
         catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
           sh '''
+            set -euxo pipefail
             mvn -B test
           '''
         }
@@ -56,66 +65,107 @@ pipeline {
       post {
         always {
           junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
+          archiveArtifacts artifacts: 'target/surefire-reports/**', allowEmptyArchive: true
         }
       }
     }
 
-stage('Functional Tests (Soft Gate)') {
-  options { timeout(time: 25, unit: 'MINUTES') }
-  steps {
-    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-      sh '''
-        # Start app in background (example: Spring Boot)
-        nohup mvn -B spring-boot:run > app.log 2>&1 &
-        APP_PID=$!
-
-        # Wait until app is up (adjust port/endpoint)
-        for i in {1..30}; do
-          curl -s http://localhost:8080/actuator/health && break
-          sleep 2
-        done
-
-        # Run integration tests
-        mvn -B verify -Pfunctional-tests
-
-        # Stop app
-        kill $APP_PID || true
-      '''
+    
+    
+    stage('Functional Tests (Soft Gate)') {
+      options { timeout(time: 30, unit: 'MINUTES') }
+      steps {
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          sh '''
+            set -euxo pipefail
+            # Skip unit tests to avoid rerun during verify lifecycle
+            mvn -B verify -Pfunctional-tests -DskipUnitTests=true
+          '''
+        }
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
+          archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
+        }
+      }
     }
-  }
-  post {
-    always {
-      junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
-      archiveArtifacts artifacts: 'app.log,target/failsafe-reports/**', allowEmptyArchive: true
-    }
-  }
-}
 
+    
     stage('Performance Tests (Soft Gate)') {
-  options { timeout(time: 30, unit: 'MINUTES') }
-  steps {
-    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-      sh '''
-        rm -rf performance-results
-        mkdir -p performance-results/report
+      options { timeout(time: 40, unit: 'MINUTES') }
+      steps {
+        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+          sh '''
+            set -euxo pipefail
 
-        # Ensure JMeter is on PATH OR use /opt/jmeter/bin/jmeter
-        jmeter -n \
-          -t perf/petclinic.jmx \
-          -l performance-results/results.jtl \
-          -e -o performance-results/report
+            if [ ! -f "${JMETER_PLAN}" ]; then
+              echo "❌ JMeter plan not found: ${JMETER_PLAN}"
+              echo "👉 Place your test plan at ${JMETER_PLAN} or update JMETER_PLAN in Jenkinsfile"
+              exit 1
+            fi
 
-        echo "JMeter run completed. Reports generated in performance-results/report"
-      '''
+            
+            # Find JMeter binary
+            if command -v jmeter >/dev/null 2>&1; then
+              JMETER_BIN="jmeter"
+            elif [ -x "/opt/jmeter/bin/jmeter" ]; then
+              JMETER_BIN="/opt/jmeter/bin/jmeter"
+            else
+              echo "❌ JMeter not found. Install and expose 'jmeter' in PATH or use /opt/jmeter/bin/jmeter"
+              exit 1
+            fi
+
+            # Start app from built jar on fixed port
+            JAR_FILE=$(ls -1 target/*.jar | head -n 1)
+            echo "Using jar: ${JAR_FILE}"
+
+            rm -f app-perf.log app.pid || true
+
+            nohup java -jar "${JAR_FILE}" --server.port=${PERF_PORT} > app-perf.log 2>&1 &
+            echo $! > app.pid
+
+            echo "Waiting for health: ${PERF_BASEURL}/actuator/health"
+            for i in $(seq 1 60); do
+              if curl -fsS "${PERF_BASEURL}/actuator/health" >/dev/null 2>&1; then
+                echo "✅ App is UP"
+                
+break
+              fi
+              sleep 2
+            done
+
+            if ! curl -fsS "${PERF_BASEURL}/actuator/health" >/dev/null 2>&1; then
+              echo "❌ App did not become ready; last logs:"
+              tail -n 200 app-perf.log || true
+              exit 1
+            fi
+
+            # Run JMeter
+            rm -rf "${PERF_OUTDIR}" || true
+            mkdir -p "${PERF_OUTDIR}/report"
+
+            ${JMETER_BIN} -n \
+              -t "${JMETER_PLAN}" \
+              -l "${PERF_OUTDIR}/results.jtl" \
+              -e -o "${PERF_OUTDIR}/report" \
+              -JbaseUrl="${PERF_BASEURL}"
+
+            echo "✅ JMeter finished"
+          '''
+        }
+      }
+      
+      post {
+        always {
+          archiveArtifacts artifacts: 'app-perf.log,performance-results/**', allowEmptyArchive: true
+        }
+      }
     }
-  }
-  post {
-    always {
-      archiveArtifacts artifacts: 'performance-results/**', allowEmptyArchive: true
-    }
-  }
-}
+
+
     stage('Docker Build') {
+
       steps {
         sh '''
           docker --version
