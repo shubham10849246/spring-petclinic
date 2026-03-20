@@ -9,8 +9,8 @@ pipeline {
 
   environment {
     // Public ECR
-    ECR_REGISTRY = "public.ecr.aws/e0f4k4s5"
-    ECR_REPO     = "public.ecr.aws/e0f4k4s5/petclinic"
+    ECR_REGISTRY = "public.ecr.aws/q3i5i7u5"
+    ECR_REPO     = "public.ecr.aws/q3i5i7u5/spring-petclinic"
     IMAGE_NAME   = "petclinic"
     IMAGE_TAG    = "${BUILD_NUMBER}"
 
