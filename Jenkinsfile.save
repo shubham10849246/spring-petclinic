@@ -91,27 +91,7 @@ pipeline {
       }
     }
 
-    stage('Functional Tests - Postgres (Soft Gate)') {
-  options { timeout(time: 30, unit: 'MINUTES') }
-  steps {
-    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-      sh '''#!/usr/bin/env bash
-      set -euxo pipefail
-
-      # Quick docker sanity check
-      docker ps
-
-      mvn -B verify -Ppostgres-tests -DskipUnitTests=true
-      '''
-    }
-  }
-  post {
-    always {
-      junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
-      archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
-    }
-  }
-}
+    
     
     stage('Performance Tests (Soft Gate)') {
       options { timeout(time: 40, unit: 'MINUTES') }
@@ -183,20 +163,7 @@ break
         }
       }
     }
-    
-    stage('SonarQube Scan') {
-  steps {
-    withSonarQubeEnv('sonarqube') {
-      sh '''#!/usr/bin/env bash
-      set -e
-      mvn -B sonar:sonar \
-        -Dsonar.projectKey=spring-petclinic \
-        -Dsonar.projectName="Spring Petclinic" \
-        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-      '''
-    }
-  }
-}
+
 
     stage('Docker Build') {
 
