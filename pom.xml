@@ -1,5 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <profiles>
+  <profile>
+    <id>functional-tests</id>
+    <build>
+      <plugins>
+
+        <!-- Runs integration tests: *IT.java during "verify" -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <version>3.2.5</version>
+          <executions>
+            <execution>
+              <id>integration-tests</id>
+              <goals>
+                <goal>integration-test</goal>
+                <goal>verify</goal>
+              </goals>
+              <configuration>
+                <includes>
+                  <include>**/*IT.java</include>
+                </includes>
+                <!-- Optional: avoid failing build fast on 1 test -->
+                <testFailureIgnore>false</testFailureIgnore>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+      </plugins>
+    </build>
+  </profile>
+</profiles>
   <modelVersion>4.0.0</modelVersion>
 
   <parent>

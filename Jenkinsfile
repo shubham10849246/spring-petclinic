@@ -60,46 +60,61 @@ pipeline {
       }
     }
 
+stage('Functional Tests (Soft Gate)') {
+  options { timeout(time: 25, unit: 'MINUTES') }
+  steps {
+    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+      sh '''
+        # Start app in background (example: Spring Boot)
+        nohup mvn -B spring-boot:run > app.log 2>&1 &
+        APP_PID=$!
 
-    stage('Functional Tests (Soft Gate)') {
-      options { timeout(time: 20, unit: 'MINUTES') }
-      steps {
-        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          sh '''
-            # Option 1: If you already have integration tests configured via Failsafe:
-            mvn -B verify -Pfunctional-tests
-          '''
-        }
-      }
-      post {
-        always {
-          junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
-        }
-      }
+        # Wait until app is up (adjust port/endpoint)
+        for i in {1..30}; do
+          curl -s http://localhost:8080/actuator/health && break
+          sleep 2
+        done
+
+        # Run integration tests
+        mvn -B verify -Pfunctional-tests
+
+        # Stop app
+        kill $APP_PID || true
+      '''
     }
-
+  }
+  post {
+    always {
+      junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
+      archiveArtifacts artifacts: 'app.log,target/failsafe-reports/**', allowEmptyArchive: true
+    }
+  }
+}
 
     stage('Performance Tests (Soft Gate)') {
-      options { timeout(time: 30, unit: 'MINUTES') }
-      steps {
-        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          sh '''
-            # Option 1: If you have a perf profile (Gatling/JMeter via Maven):
-            mvn -B verify -Pperformance-tests
+  options { timeout(time: 30, unit: 'MINUTES') }
+  steps {
+    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+      sh '''
+        rm -rf performance-results
+        mkdir -p performance-results/report
 
-            # If you generate perf reports in a folder, keep them under:
-            # performance-results/
-          '''
-        }
-      }
-      post {
-        always {
-          archiveArtifacts artifacts: 'performance-results/**', allowEmptyArchive: true
-        }
-      }
+        # Ensure JMeter is on PATH OR use /opt/jmeter/bin/jmeter
+        jmeter -n \
+          -t perf/petclinic.jmx \
+          -l performance-results/results.jtl \
+          -e -o performance-results/report
+
+        echo "JMeter run completed. Reports generated in performance-results/report"
+      '''
     }
-
-
+  }
+  post {
+    always {
+      archiveArtifacts artifacts: 'performance-results/**', allowEmptyArchive: true
+    }
+  }
+}
     stage('Docker Build') {
       steps {
         sh '''
