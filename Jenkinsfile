@@ -71,7 +71,7 @@ pipeline {
       }
     }
 
-   stage('Functional Tests - Postgres (Soft Gate)') {
+    stage('Functional Tests - Postgres (Soft Gate)') {
   options { timeout(time: 30, unit: 'MINUTES') }
   steps {
     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -89,28 +89,6 @@ pipeline {
     always {
       junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
       archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
-    }
-  }
-} 
-   
-
-    stage('Functional Tests - Postgres (Soft Gate)') {
-  options { timeout(time: 30, unit: 'MINUTES') }
-  steps {
-    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-      sh '''#!/usr/bin/env bash
-      set -euxo pipefail
-
-      # Quick docker sanity check
-      docker ps
-
-      mvn -B verify -Ppostgres-tests -DskipUnitTests=true
-      '''
-    }
-  }
-  post {
-    always {
-      junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'      archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
     }
   }
 }
