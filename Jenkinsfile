@@ -234,13 +234,6 @@ break
   } // ✅ closes stages
 
   post {
-always {
-    sh '''
-      sudo chown -R jenkins:jenkins $WORKSPACE || true
-      rm -rf $WORKSPACE/target || true
-    '''
-    clean
-}
     success {
       echo "✅ CI/CD SUCCESS: Image pushed to ECR (deploy stage skipped/commented)"
     }
