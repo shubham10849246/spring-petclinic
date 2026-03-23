@@ -163,22 +163,27 @@ break
         }
       }
     }
-    
-    stage('SonarQube Scan') {
+
+   stage('SonarQube Scan') {
   steps {
     withSonarQubeEnv('sonarqube') {
-      sh '''#!/usr/bin/env bash
-      set -e
-      mvn -B sonar:sonar \
-        -Dsonar.projectKey=spring-petclinic \
-        -Dsonar.projectName="Spring Petclinic" \
-        -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-      '''
+      withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+        sh '''#!/usr/bin/env bash
+        set -e
+
+        mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:4.0.0.4121:sonar \
+          -Dsonar.host.url="$SONAR_HOST_URL" \
+          -Dsonar.token="$SONAR_TOKEN" \
+          -Dsonar.projectKey=spring-petclinic \
+          -Dsonar.projectName="Spring Petclinic" \
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+        '''
+      }
     }
   }
 }
-
-    stage('Docker Build') {
+    
+   stage('Docker Build') {
 
       steps {
         sh '''
