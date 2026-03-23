@@ -72,25 +72,27 @@ pipeline {
     }
 
     
-    
-    stage('Functional Tests (Soft Gate)') {
-      options { timeout(time: 30, unit: 'MINUTES') }
-      steps {
-        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-          sh '''#!/usr/bin/env bash
-            set -euxo pipefail
-            # Skip unit tests to avoid rerun during verify lifecycle
-            mvn -B verify -Pfunctional-tests -DskipUnitTests=true
-          '''
-        }
-      }
-      post {
-        always {
-          junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
-          archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
-        }
-      }
+  stage('Functional Tests (Soft Gate)') {
+  options { timeout(time: 30, unit: 'MINUTES') }
+  environment {
+    MAVEN_OPTS = "-Xms256m -Xmx1024m -XX:+UseG1GC"
+  }
+  steps {
+    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+      sh '''#!/usr/bin/env bash
+        set -euxo pipefail
+        mvn -B verify -Pfunctional-tests -DskipUnitTests=true \
+          -Dsurefire.parallel=none -DforkCount=1 -DreuseForks=true
+      '''
     }
+  }
+  post {
+    always {
+      junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
+      archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
+    }
+  }
+}
 
     stage('Functional Tests - Postgres (Soft Gate)') {
   options { timeout(time: 30, unit: 'MINUTES') }
@@ -108,8 +110,7 @@ pipeline {
   }
   post {
     always {
-      junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
-      archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
+      junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'      archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
     }
   }
 }
