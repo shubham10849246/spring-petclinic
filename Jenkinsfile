@@ -87,11 +87,11 @@ pipeline {
     }
   }
   post {
-    always {
-      junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
-      archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
-    }
+  always {
+    junit allowEmptyResults: true, testResults: 'target/failsafe-reports/*.xml'
+    archiveArtifacts artifacts: 'target/failsafe-reports/**', allowEmptyArchive: true
   }
+}
 }
 
     stage('Functional Tests - Postgres (Soft Gate)') {
