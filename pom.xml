@@ -229,13 +229,21 @@
             <phase>validate</phase>
             <configuration>
               <configLocation>src/checkstyle/nohttp-checkstyle.xml</configLocation>
-              <sourceDirectories>${basedir}</sourceDirectories>
+              <sourceDirectories>${basedir}/src</sourceDirectories>
               <includes>**/*</includes>
-              <excludes>**/.git/**/*,**/.idea/**/*,**/target/**/,**/.flattened-pom.xml,**/*.class
-                **/performance-results/**
-                **/target/**
-                **/node_modules/*
-              </excludes>
+              <excludes>
+  **/.git/**,
+  **/.idea/**,
+  **/target/**,
+  **/.flattened-pom.xml,
+  **/*.class,
+  **/performance-results/**,
+  **/node_modules/**,
+  **/perf/**,
+  **/jmeter/**,
+  **/reports/**,
+  **/report/**
+</excludes>
               <propertyExpansion>config_loc=${basedir}/src/checkstyle/</propertyExpansion>
             </configuration>
           </execution>
