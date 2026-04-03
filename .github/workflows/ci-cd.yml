@@ -1,0 +1,85 @@
+name: Full CI-CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+
+  build-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build + Unit + Functional Tests
+        run: |
+          mvn clean install \
+            -Dcheckstyle.skip=true \
+            -Dspring.docker.compose.skip.in-tests=true \
+            -Dtest='!*Postgres*'
+
+  performance-test:
+    runs-on: ubuntu-latest
+    needs: build-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install JMeter
+        run: |
+          sudo apt update
+          sudo apt install -y jmeter
+
+      - name: Run Performance Test
+        run: |
+          jmeter -n \
+            -t jmeter/test-plan.jmx \
+            -l results.jtl
+
+  sonar:
+    runs-on: ubuntu-latest
+    needs: build-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sonar Scan
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=petclinic \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+  docker-nexus:
+    runs-on: ubuntu-latest
+    needs: [sonar, performance-test]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          docker build -t petclinic:latest .
+
+      - name: Tag for Nexus
+        run: |
+          docker tag petclinic:latest \
+          ${{ secrets.NEXUS_DOCKER_URL }}/petclinic:latest
+
+      - name: Login to Nexus Docker Repo
+        run: |
+          echo "${{ secrets.NEXUS_PASSWORD }}" | docker login \
+          ${{ secrets.NEXUS_DOCKER_URL }} \
+          -u ${{ secrets.NEXUS_USERNAME }} --password-stdin
+
+      - name: Push to Nexus
+        run: |
+          docker push ${{ secrets.NEXUS_DOCKER_URL }}/petclinic:latest
