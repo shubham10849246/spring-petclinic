@@ -31,10 +31,11 @@ jobs:
 
   performance-test:
     runs-on: ubuntu-latest
-    needs: build-test
+    needs: build-test-sonar
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Install JMeter
         run: |
@@ -49,10 +50,11 @@ jobs:
 
   docker-nexus:
     runs-on: ubuntu-latest
-    needs: [sonar, performance-test]
+    needs: performance-test
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Build Docker Image
         run: |
