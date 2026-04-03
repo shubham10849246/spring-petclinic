@@ -1,4 +1,4 @@
-name: Full CI-CD Pipeline
+\name: Full CI-CD Pipeline
 
 on:
   push:
@@ -74,6 +74,15 @@ jobs:
         run: |
           docker tag petclinic:latest \
           ${{ secrets.NEXUS_DOCKER_URL }}/petclinic:latest
+
+      - name: Configure Docker for HTTP Nexus
+        run: |
+          sudo mkdir -p /etc/docker
+          echo '{
+             "insecure-registries" : ["'${{ secrets.NEXUS_DOCKER_URL }}'"]
+             }' | sudo tee /etc/docker/daemon.json
+
+          sudo systemctl restart docker
 
       - name: Login to Nexus Docker Repo
         run: |
