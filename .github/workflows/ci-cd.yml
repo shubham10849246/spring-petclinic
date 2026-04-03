@@ -76,7 +76,12 @@ jobs:
 
       - name: Configure Docker for Nexus (HTTP)
         run: |
-          echo '{"insecure-registries":["'"${{ secrets.NEXUS_DOCKER_URL }}"'"]}' | sudo tee /etc/docker/daemon.json
+          sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+          {
+            "insecure-registries": ["${{ secrets.NEXUS_DOCKER_URL }}"]
+          }
+          EOF
+
           sudo systemctl daemon-reexec
           sudo systemctl restart docker
 
