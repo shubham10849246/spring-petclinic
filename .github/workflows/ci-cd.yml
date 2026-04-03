@@ -75,6 +75,11 @@ jobs:
           docker tag petclinic:latest \
           ${{ secrets.NEXUS_DOCKER_URL }}/petclinic:latest
 
+      - name: Configure Docker for HTTP Nexus
+  run: |
+    echo '{ "insecure-registries": ["'${{ secrets.NEXUS_DOCKER_URL }}'"] }' | sudo tee /etc/docker/daemon.json
+    sudo systemctl restart docker
+
       # ✅ safer fix (no daemon.json headache)
       - name: Login to Nexus Docker Repo
         run: |
