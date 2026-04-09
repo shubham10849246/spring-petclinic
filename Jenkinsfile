@@ -50,7 +50,7 @@ pipeline {
 
     stage('Maven Build (compile/package)') {
       steps {
-        sh 'mvn -B -U clean package -DskipTests'
+        sh 'mvn -B -U clean package'
       }
       post {
         always {
