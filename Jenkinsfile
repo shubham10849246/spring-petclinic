@@ -56,6 +56,18 @@ pipeline {
       }
     }
 
+    stage('Docker Permission Check') {
+  steps {
+    sh '''
+      echo "USER=$(whoami)"
+      echo "GROUPS=$(id)"
+      ls -l /var/run/docker.sock
+      docker ps
+    '''
+  }
+}
+
+
     stage('Docker Build') {
   steps {
     sh '''
