@@ -57,14 +57,15 @@ pipeline {
     }
 
     stage('Docker Build') {
-      steps {
-        sh '''
-          docker build -t ${IMAGE_URI} .
-          docker tag ${IMAGE_URI} ${IMAGE_LATEST}
-          docker images | head -n 20
-        '''
-      }
-    }
+  steps {
+    sh '''
+      docker build -t ${IMAGE_URI} .
+      docker tag ${IMAGE_URI} ${IMAGE_LATEST}
+      docker images | head -n 20
+    '''
+  }
+}
+
 
     stage('ECR Login & Push') {
       steps {
