@@ -80,24 +80,27 @@ pipeline {
 
 
     stage('ECR Login & Push') {
-      steps {
-        withCredentials([[
-          $class: 'AmazonWebServicesCredentialsBinding',
-          credentialsId: 'aws-jenkins-creds'
-        ]]) {
-          sh '''
-            aws ecr get-login-password --region ${AWS_REGION} | \
-              docker login --username AWS --password-stdin ${ECR_REGISTRY}
+  steps {
+    sh '''
+      echo "Logging into ECR..."
+      aws ecr get-login-password --region ${AWS_REGION} | \
+        docker login --username AWS --password-stdin ${ECR_REGISTRY}
 
-            aws ecr describe-repositories --repository-names ${ECR_REPO} --region ${AWS_REGION} >/dev/null 2>&1 || \
-              aws ecr create-repository --repository-name ${ECR_REPO} --region ${AWS_REGION}
+      echo "Ensuring ECR repo exists..."
+      aws ecr describe-repositories \
+        --repository-names ${ECR_REPO} \
+        --region ${AWS_REGION} \
+        >/dev/null 2>&1 || \
+      aws ecr create-repository \
+        --repository-name ${ECR_REPO} \
+        --region ${AWS_REGION}
 
-            docker push ${IMAGE_URI}
-            docker push ${IMAGE_LATEST}
-          '''
-        }
-      }
-    }
+      echo "Pushing images..."
+      docker push ${IMAGE_URI}
+      docker push ${IMAGE_LATEST}
+    '''
+  }
+}
   }
 
   post {
