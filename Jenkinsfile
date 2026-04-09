@@ -12,6 +12,9 @@ pipeline {
     AWS_ACCOUNT  = '713332525966'
     ECR_REPO     = 'petclinic'
     ECR_REGISTRY = "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+    
+    SONAR_PROJECT_KEY  = 'petclinic'
+    SONARQUBE_SERVER   = 'sonarqube'  // this must match the name in Jenkins Sonar config
 
     GIT_SHORT = "${env.GIT_COMMIT?.take(7) ?: 'nogit'}"
     IMAGE_TAG = "${env.BUILD_NUMBER}-${GIT_SHORT}"
@@ -59,7 +62,7 @@ pipeline {
     
     stage('SonarQube Scan') {
       steps {
-        withSonarQubeEnv("${SONARQUBE_SERVER}") {
+        withSonarQubeEnv(env.SONARQUBE_SERVER) {
           sh """
             mvn -B sonar:sonar \
               -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
