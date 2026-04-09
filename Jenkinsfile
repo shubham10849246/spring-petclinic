@@ -56,17 +56,27 @@ pipeline {
       }
     }
 
-    stage('Docker Permission Check') {
-  steps {
-    sh '''
-      echo "USER=$(whoami)"
-      echo "GROUPS=$(id)"
-      ls -l /var/run/docker.sock
-      docker ps
-    '''
-  }
-}
+    
+    stage('SonarQube Scan') {
+      steps {
+        withSonarQubeEnv("${SONARQUBE_SERVER}") {
+          sh """
+            mvn -B sonar:sonar \
+              -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+              -Dsonar.projectName=${APP_NAME}
+          """
+        }
+      }
+    }
 
+
+    stage('Quality Gate') {
+      steps {
+        timeout(time: 10, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
+      }
+    }
 
     stage('Docker Build') {
   steps {
