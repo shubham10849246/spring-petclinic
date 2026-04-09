@@ -1,0 +1,7 @@
+.git
+.gitignore
+.devcontainer
+**/.devcontainer
+target
+*.log
+*.tmp
