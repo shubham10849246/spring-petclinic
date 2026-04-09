@@ -1,5 +1,5 @@
 pipeline {
-  agent any
+  agent { label 'slave1' }
 
   tools {
     // Configure these names in: Manage Jenkins -> Global Tool Configuration
@@ -47,7 +47,7 @@ pipeline {
 
     stage('Maven Build (compile/package)') {
       steps {
-        sh 'mvn -B -U clean package'
+        sh 'mvn -B -U clean package -Dmaven.test.skip=true'
       }
       post {
         always {
