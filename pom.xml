@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -27,8 +28,140 @@
     <webjars-font-awesome.version>4.7.0</webjars-font-awesome.version>
   </properties>
 
+  <!-- ✅ Testcontainers BOM (CORRECT PLACE) -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>1.19.7</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  
   <dependencies>
-    <!-- App deps -->
+
+  <!-- Boot 4: webmvc starter (you already have it) -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-webmvc</artifactId>
+  </dependency>
+
+  <!-- Boot 4: RestTemplate/RestClient are modular; include webclient starter -->
+  <!-- This aligns with Boot 4 testing modularization guidance -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-webclient</artifactId>
+  </dependency>
+  <!-- (Reason: RestTemplateBuilder lives in org.springframework.boot.restclient.*) -->
+  <!-- RestTemplateBuilder API shows package org.springframework.boot.restclient -->
+  <!-- [1](https://docs.spring.io/spring-boot/api/java/org/springframework/boot/restclient/RestTemplateBuilder.html)[12](https://rieckpil.de/whats-new-for-testing-in-spring-boot-4-0-and-spring-framework-7/) -->
+
+  <!-- ✅ Core test starter -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-test</artifactId>
+    <scope>test</scope>
+  </dependency>
+
+  <!-- Boot 4 modular test modules (these fix your missing test packages) -->
+
+  <!-- Provides org.springframework.boot.webmvc.test.autoconfigure.* like @WebMvcTest -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-webmvc-test</artifactId>
+    <scope>test</scope>
+  </dependency>
+  <!-- [4](https://docs.spring.io/spring-boot/api/java/org/springframework/boot/webmvc/test/autoconfigure/WebMvcTest.html)[5](https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-webmvc-test)[13](https://stackoverflow.com/questions/79831004/missed-autoconfiguremockmvc-in-spring-boot-test-autoconfigure-4-spring-boot-4) -->
+
+  <!-- Provides org.springframework.boot.resttestclient.* + @AutoConfigureTestRestTemplate -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-resttestclient</artifactId>
+    <scope>test</scope>
+  </dependency>
+  <!-- [2](https://docs.spring.io/spring-boot/api/java/org/springframework/boot/resttestclient/autoconfigure/AutoConfigureTestRestTemplate.html)[3](https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-resttestclient) -->
+
+  <!-- Provides org.springframework.boot.data.jpa.test.autoconfigure.* like @DataJpaTest -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa-test</artifactId>
+    <scope>test</scope>
+  </dependency>
+  <!-- [6](https://docs.spring.io/spring-boot/api/java/org/springframework/boot/data/jpa/test/autoconfigure/DataJpaTest.html)[7](https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-data-jpa-test) -->
+
+  <!-- Provides org.springframework.boot.jdbc.test.autoconfigure.* like AutoConfigureTestDatabase -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-jdbc-test</artifactId>
+    <scope>test</scope>
+  </dependency>
+  <!-- StackOverflow examples show adding jdbc-test + data-jpa-test for Boot 4 tests -->
+  <!-- [14](https://stackoverflow.com/questions/79826448/datajpatest-and-autoconfiguretestdatabase-in-spring-boot-4-0-0)[15](https://docs.spring.io/spring-boot/api/java/org/springframework/boot/jdbc/test/autoconfigure/AutoConfigureTestDatabase.html) -->
+
+  <!-- Needed for @ServiceConnection in org.springframework.boot.testcontainers.service.connection -->
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-testcontainers</artifactId>
+    <scope>test</scope>
+  </dependency>
+  <!-- [8](https://docs.spring.io/spring-boot/api/java/org/springframework/boot/testcontainers/service/connection/ServiceConnection.html)[9](https://mkyong.com/spring-boot/spring-boot-serviceconnection-example/) -->
+
+  <!-- Testcontainers (BOM manages versions) -->
+  <dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>junit-jupiter</artifactId>
+    <scope>test</scope>
+  </dependency>
+
+  <!-- MySQL + Postgres containers because your tests include both -->
+  <dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>mysql</artifactId>
+    <scope>test</scope>
+  </dependency>
+  <dependency>
+    <groupId>org.testcontainers</groupId>
+    <artifactId>postgresql</artifactId>
+    <scope>test</scope>
+  </dependency>
+  <!-- MySQLContainer class is under org.testcontainers.containers.* -->
+  <!-- [10](https://javadoc.io/doc/org.testcontainers/mysql/1.20.4/org/testcontainers/containers/MySQLContainer.html)[11](https://java.testcontainers.org/modules/databases/mysql/) -->
+
+</dependencies>
+
+  <dependencies>
+
+    <!-- ✅ Spring Boot Test (JUnit 5, Mockito, AssertJ) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- ✅ Testcontainers -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>mysql</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- === APPLICATION DEPENDENCIES === -->
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
@@ -59,21 +192,20 @@
       <artifactId>spring-boot-starter-webmvc</artifactId>
     </dependency>
 
-    <!-- Required for javax.cache.* imports in CacheConfiguration -->
+    <!-- Cache API -->
     <dependency>
       <groupId>javax.cache</groupId>
       <artifactId>cache-api</artifactId>
       <version>1.1.1</version>
     </dependency>
 
-    <!-- Required for jakarta.xml.bind.annotation.* imports in Vet/Vets -->
+    <!-- JAXB -->
     <dependency>
       <groupId>jakarta.xml.bind</groupId>
       <artifactId>jakarta.xml.bind-api</artifactId>
       <version>4.0.2</version>
     </dependency>
 
-    <!-- JAXB runtime implementation -->
     <dependency>
       <groupId>org.glassfish.jaxb</groupId>
       <artifactId>jaxb-runtime</artifactId>
@@ -86,11 +218,11 @@
       <artifactId>h2</artifactId>
       <scope>runtime</scope>
     </dependency>
+
   </dependencies>
 
   <build>
     <plugins>
-      <!-- Spring Boot jar -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
