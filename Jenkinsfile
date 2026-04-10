@@ -1,5 +1,5 @@
 pipeline {
-  agent { label 'slave1' }
+  agent none
 
   tools {
     maven 'Maven3'
@@ -12,55 +12,44 @@ pipeline {
     AWS_ACCOUNT  = '713332525966'
     ECR_REPO     = 'petclinic'
     ECR_REGISTRY = "${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-    
-    SONAR_PROJECT_KEY  = 'petclinic'
-    SONARQUBE_SERVER   = 'sonarqube'  // this must match the name in Jenkins Sonar config
+
+    SONAR_PROJECT_KEY = 'petclinic'
+    SONARQUBE_SERVER  = 'sonarqube'
 
     GIT_SHORT = "${env.GIT_COMMIT?.take(7) ?: 'nogit'}"
     IMAGE_TAG = "${env.BUILD_NUMBER}-${GIT_SHORT}"
     IMAGE_URI = "${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
-    IMAGE_LATEST = "${ECR_REGISTRY}/${ECR_REPO}:latest"
   }
 
   options {
     timestamps()
     disableConcurrentBuilds()
+    timeout(time: 45, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '30'))
   }
 
   stages {
 
     stage('Checkout') {
-      steps {
-        checkout scm
-      }
+      agent { label 'slave1' }
+      steps { checkout scm }
     }
 
-    stage('Tool Check (on Agent)') {
+    stage('Build + Unit Tests') {
+      agent { label 'slave1' }
       steps {
-        sh '''
-          echo "NODE: $(hostname)"
-          echo "JAVA_HOME=$JAVA_HOME"
-          java -version
-          mvn -version
-          docker --version
-          aws --version || true
-        '''
-      }
-    }
-
-    stage('Maven Build (skip tests)') {
-      steps {
-        sh 'mvn -B -U clean package -Dmaven.test.skip=true'
+        sh 'mvn -B -U clean test'
       }
       post {
         always {
+          junit 'target/surefire-reports/*.xml'
           archiveArtifacts artifacts: 'target/*.jar', fingerprint: true, onlyIfSuccessful: false
         }
       }
     }
 
-    
     stage('SonarQube Scan') {
+      agent { label 'slave1' }
       steps {
         withSonarQubeEnv(env.SONARQUBE_SERVER) {
           sh """
@@ -72,48 +61,59 @@ pipeline {
       }
     }
 
+    stage('Quality Gate') {
+      agent { label 'slave1' }
+      steps {
+        timeout(time: 2, unit: 'MINUTES') {
+          waitForQualityGate abortPipeline: true
+        }
+      }
+    }
 
     stage('Docker Build') {
-  steps {
-    sh '''
-      docker build -t ${IMAGE_URI} .
-      docker tag ${IMAGE_URI} ${IMAGE_LATEST}
-      docker images | head -n 20
-    '''
-  }
-}
-
+      agent { label 'slave1' }
+      steps {
+        sh '''
+          docker build -t ${IMAGE_URI} .
+          docker images | head -n 20
+        '''
+      }
+    }
 
     stage('ECR Login & Push') {
-  steps {
-    sh '''
-      echo "Logging into ECR..."
-      aws ecr get-login-password --region ${AWS_REGION} | \
-        docker login --username AWS --password-stdin ${ECR_REGISTRY}
+      agent { label 'slave1' }
+      steps {
+        sh '''
+          aws ecr get-login-password --region ${AWS_REGION} | \
+            docker login --username AWS --password-stdin ${ECR_REGISTRY}
 
-      echo "Ensuring ECR repo exists..."
-      aws ecr describe-repositories \
-        --repository-names ${ECR_REPO} \
-        --region ${AWS_REGION} \
-        >/dev/null 2>&1 || \
-      aws ecr create-repository \
-        --repository-name ${ECR_REPO} \
-        --region ${AWS_REGION}
+          aws ecr describe-repositories --repository-names ${ECR_REPO} --region ${AWS_REGION} >/dev/null 2>&1 || \
+          aws ecr create-repository --repository-name ${ECR_REPO} --region ${AWS_REGION}
 
-      echo "Pushing images..."
-      docker push ${IMAGE_URI}
-      docker push ${IMAGE_LATEST}
-    '''
-  }
-}
+          docker push ${IMAGE_URI}
+        '''
+      }
+    }
+
+    stage('Update GitOps Repo (Image Tag)') {
+      agent { label 'slave2' }
+      steps {
+        // RECOMMENDATION: clone gitops repo, update deployment manifest image to ${IMAGE_URI}, commit & push
+        echo "Update GitOps manifests to use ${IMAGE_URI} and push to Git."
+      }
+    }
+
+    stage('Post-Deploy Smoke Test') {
+      agent { label 'slave2' }
+      steps {
+        // RECOMMENDATION: curl service endpoint or actuator health after Argo sync
+        echo "Run smoke checks (HTTP 200 /actuator/health)."
+      }
+    }
   }
 
   post {
-    always {
-      sh 'docker system prune -af || true'
-    }
-    success {
-      echo "✅ Image pushed: ${IMAGE_URI}"
-    }
+    success { echo "✅ Image pushed: ${IMAGE_URI}" }
+    always  { sh 'docker image prune -f || true' }
   }
 }
