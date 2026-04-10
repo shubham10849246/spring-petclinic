@@ -29,12 +29,10 @@ pipeline {
   stages {
 
     stage('Checkout') {
-      agent { label 'slave1' }
       steps { checkout scm }
     }
 
     stage('Build + Unit Tests') {
-      agent { label 'slave1' }
       steps {
         sh 'mvn -B -U clean test'
       }
@@ -47,7 +45,6 @@ pipeline {
     }
 
     stage('SonarQube Scan') {
-      agent { label 'slave1' }
       steps {
         withSonarQubeEnv(env.SONARQUBE_SERVER) {
           sh """
@@ -60,7 +57,6 @@ pipeline {
     }
 
     stage('Quality Gate') {
-      agent { label 'slave1' }
       steps {
         timeout(time: 2, unit: 'MINUTES') {
           waitForQualityGate abortPipeline: true
@@ -69,7 +65,6 @@ pipeline {
     }
 
     stage('Docker Build') {
-      agent { label 'slave1' }
       steps {
         sh '''
           docker build -t ${IMAGE_URI} .
@@ -79,7 +74,6 @@ pipeline {
     }
 
     stage('ECR Login & Push') {
-      agent { label 'slave1' }
       steps {
         sh '''
           aws ecr get-login-password --region ${AWS_REGION} | \
