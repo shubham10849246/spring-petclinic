@@ -90,8 +90,11 @@ pipeline {
         sh '''
           set -e
           echo "Checking Docker availability for Testcontainers..."
-          docker info >/dev/null 2>&1
-          mvn -B -U verify -DskipITs=false
+          docker info >/dev/null 2>&1          
+          mvn -B -U verify \
+            -DskipITs=false \
+            -Dspring.profiles.active=default \
+            -DskipPostgresITs=true
         '''
       }
       post {

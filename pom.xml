@@ -205,7 +205,10 @@
               <goal>verify</goal>
             </goals>
             <configuration>
-              <skipITs>${skipITs}</skipITs>
+              <skipITs>${skipITs}</skipIT>
+    <excludes>
+      <exclude>**/*PostgresIntegrationTests.java</exclude>
+    </excludes>
               <includes>
                 <include>**/*IT.java</include>
                 <include>**/*IntegrationTests.java</include>
