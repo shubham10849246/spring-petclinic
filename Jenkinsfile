@@ -24,7 +24,6 @@ pipeline {
   options {
     timestamps()
     disableConcurrentBuilds()
-    ansiColor('xterm')
   }
   
   parameters {
@@ -73,10 +72,12 @@ pipeline {
     stage('Build + Unit Tests (skip IT)') {
       agent { label 'slave1' }
       steps {
+        wrap([$class: 'AnsiColorBuildWrapper', colorMapName: 'xterm']) {
         sh '''
           set -e
           mvn -B -U clean verify -DskipITs=true
         '''
+	}
       }
       post {
         always {
