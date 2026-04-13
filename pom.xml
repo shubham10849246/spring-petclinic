@@ -195,28 +195,28 @@
 
       <!-- Failsafe: integration tests (e.g., *IT.java). Can skip via -DskipITs=true -->
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>integration-tests</id>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-            <configuration>
-              <skipITs>${skipITs}</skipIT>
-    <excludes>
-      <exclude>**/*PostgresIntegrationTests.java</exclude>
-    </excludes>
-              <includes>
-                <include>**/*IT.java</include>
-                <include>**/*IntegrationTests.java</include>
-              </includes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-failsafe-plugin</artifactId>
+  <executions>
+    <execution>
+      <id>integration-tests</id>
+      <goals>
+        <goal>integration-test</goal>
+        <goal>verify</goal>
+      </goals>
+      <configuration>
+        <skipITs>${skipITs}</skipITs>
+        <excludes>
+          <exclude>**/*PostgresIntegrationTests.java</exclude>
+        </excludes>
+        <includes>
+          <include>**/*IT.java</include>
+          <include>**/*IntegrationTests.java</include>
+        </includes>
+      </configuration>
+    </execution>
+  </executions>
+</plugin>
 
       <!-- JaCoCo coverage -->
       <plugin>
