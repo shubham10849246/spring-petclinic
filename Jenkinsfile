@@ -189,10 +189,14 @@ pipeline {
 
   
   post {
-    success { echo "✅ Image pushed: ${env.IMAGE_URI}" }
-    always  {
+  success {
+    echo "✅ Image pushed: ${env.IMAGE_URI}"
+  }
+  always {
+    node('slave1') {
       sh 'docker image prune -f || true'
     }
   }
+}
 }
 
