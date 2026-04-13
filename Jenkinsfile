@@ -22,12 +22,7 @@ pipeline {
     disableConcurrentBuilds()
   }
   
-  parameters {
-    booleanParam(name: 'RUN_SONAR', defaultValue: true, description: 'Run SonarQube scan + Quality Gate')
-    booleanParam(name: 'RUN_IT', defaultValue: false, description: 'Run Integration Tests (Testcontainers) - requires Docker')
-  }
-
-
+  
   stages {
 
     
@@ -84,7 +79,6 @@ pipeline {
     }
 	
     stage('Integration Tests (Testcontainers)') {
-      when { expression { return params.RUN_IT } }
       agent { label 'slave1' }
       steps {
         sh '''
@@ -106,7 +100,6 @@ pipeline {
 
     
     stage('SonarQube Scan') {
-      when { expression { return params.RUN_SONAR } }
       agent { label 'slave1' }
       steps {
         withSonarQubeEnv(env.SONARQUBE_SERVER) {
