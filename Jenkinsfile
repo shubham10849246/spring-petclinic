@@ -15,10 +15,6 @@ pipeline {
 
     SONAR_PROJECT_KEY = 'petclinic'
     SONARQUBE_SERVER  = 'sonarqube'
-
-    GIT_SHORT = "${env.GIT_COMMIT?.take(7) ?: 'nogit'}"
-    IMAGE_TAG = "${env.BUILD_NUMBER}-${GIT_SHORT}"
-    IMAGE_URI = "${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
   }
 
   options {
