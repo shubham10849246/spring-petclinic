@@ -176,7 +176,9 @@ pipeline {
   }
   always {
     node('slave1') {
-      sh 'docker image prune -f || true'
+      sh '''
+        docker system prune -af --volumes || true
+      '''
     }
   }
 }

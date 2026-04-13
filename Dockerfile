@@ -2,7 +2,7 @@
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY . .
-RUN mvn -B -U clean package -Dmaven.test.skip=true
+RUN mvn -B -U -ntp clean package -Dmaven.test.skip=true
 
 # --- Run stage ---
 FROM eclipse-temurin:17-jre
