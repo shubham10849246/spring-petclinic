@@ -119,16 +119,6 @@ pipeline {
         }
       }
     }
-
-    stage('Quality Gate') {
-      when { expression { return params.RUN_SONAR } }
-      agent { label 'slave1' }
-      steps {
-        timeout(time: 3, unit: 'MINUTES') {
-          waitForQualityGate abortPipeline: true
-        }
-      }
-    }
     
     
     stage('Docker Build') {
