@@ -2,7 +2,11 @@
 .gitignore
 .devcontainer
 **/.devcontainer
-target
+target/
 *.log
 *.tmp
+.m2
 node_modules/
+tests
+reports
+
