@@ -125,6 +125,22 @@ pipeline {
       }
     }
 
+    stage('Container Image Scan (Trivy)') {
+  agent { label 'slave1' }
+  steps {
+    sh '''
+      mkdir -p reports/security
+      trivy image \
+        --severity HIGH,CRITICAL \
+        --exit-code 1 \
+        --format json \
+        -o reports/security/trivy-report.json \
+        ${IMAGE_URI}
+    '''
+  }
+}
+
+
     stage('ECR Login & Push') {
       agent { label 'slave1' }
       steps {
@@ -159,6 +175,27 @@ pipeline {
       }
     }
 
+    stage('ArgoCD Sync Validation') {
+  agent { label 'slave2' }
+  steps {
+    sh '''
+      APP_STATUS=$(argocd app get spring-petclinic -o json)
+
+      HEALTH=$(echo "$APP_STATUS" | jq -r '.status.health.status')
+      SYNC=$(echo "$APP_STATUS" | jq -r '.status.sync.status')
+
+      echo "Health: $HEALTH"
+      echo "Sync: $SYNC"
+
+      if [ "$HEALTH" != "Healthy" ] || [ "$SYNC" != "Synced" ]; then
+        echo "❌ ArgoCD validation failed"
+        exit 1
+      fi
+    '''
+  }
+}
+``
+
     stage('Post-Deploy Smoke Test') {
       agent { label 'slave2' }
       steps {
@@ -167,6 +204,17 @@ pipeline {
         // sh 'curl -f http://<your-service-url>/actuator/health'
       }
     }
+
+    stage('Metrics & Evidence') {
+  agent { label 'slave1' }
+  steps {
+    archiveArtifacts artifacts: 'reports/**/*', fingerprint: true
+    junit allowEmptyResults: true, testResults: '''
+      target/surefire-reports/*.xml,
+      target/failsafe-reports/*.xml
+    '''
+  }
+}
   }
 
   
