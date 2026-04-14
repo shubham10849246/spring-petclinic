@@ -194,7 +194,6 @@ pipeline {
     '''
   }
 }
-``
 
     stage('Post-Deploy Smoke Test') {
       agent { label 'slave2' }
