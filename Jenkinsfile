@@ -114,6 +114,17 @@ pipeline {
     }
     
     
+    stage('Workspace Sanity Cleanup') {
+  agent { label 'slave1' }
+  steps {
+    sh '''
+      echo "Cleaning workspace caches before Docker build"
+      rm -rf .m2
+      rm -rf target
+    '''
+  }
+}
+
     stage('Docker Build') {
       agent { label 'slave1' }
       steps {
