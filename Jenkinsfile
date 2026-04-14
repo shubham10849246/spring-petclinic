@@ -126,15 +126,16 @@ pipeline {
 }
 
     stage('Docker Build') {
-      agent { label 'slave1' }
-      steps {
-        sh '''
-          set -e
-          docker build --pull -t ${IMAGE_URI} .
-          docker images | head -n 20
-        '''
-      }
-    }
+  agent { label 'slave1' }
+  steps {
+    sh '''
+      echo "Build context size:"
+      du -sh .
+
+      docker build --no-cache -t ${IMAGE_URI} .
+    '''
+  }
+}
 
     stage('Container Image Scan (Trivy)') {
   agent { label 'slave1' }
