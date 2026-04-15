@@ -195,7 +195,12 @@ pipeline {
   agent { label 'slave2' }
   steps {
     sh '''
-      APP_STATUS=$(argocd app get spring-petclinic -o json)
+      ARGOCD_SERVER="13.126.183.105:31567"
+
+      APP_STATUS=$(argocd app get spring-petclinic \
+        --server ${ARGOCD_SERVER} \
+        --insecure \
+        -o json)
 
       HEALTH=$(echo "$APP_STATUS" | jq -r '.status.health.status')
       SYNC=$(echo "$APP_STATUS" | jq -r '.status.sync.status')
@@ -210,7 +215,6 @@ pipeline {
     '''
   }
 }
-
 
     stage('Post-Deploy Smoke Test') {
       agent { label 'slave2' }
