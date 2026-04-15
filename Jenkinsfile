@@ -189,6 +189,7 @@ pipeline {
         // '''
       }
     }
+}
 
     stage('ArgoCD Sync Validation') {
   agent { label 'slave2' }
@@ -209,6 +210,7 @@ pipeline {
     '''
   }
 }
+
 
     stage('Post-Deploy Smoke Test') {
       agent { label 'slave2' }
