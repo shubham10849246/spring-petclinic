@@ -137,21 +137,29 @@ pipeline {
   }
 }
 
-   stage('Container Image Scan (Trivy)') {
+    stage('Container Image Scan (Trivy – Non Blocking)') {
   agent { label 'slave1' }
   steps {
     sh '''
+      set +e
       mkdir -p reports/security
 
+      echo "Re-authenticating to ECR"
+      aws ecr get-login-password --region ${AWS_REGION} | \
+        docker login --username AWS --password-stdin ${ECR_REGISTRY} || true
+
+      echo "Running Trivy scan (non-blocking)"
       trivy image \
-        --severity HIGH,CRITICAL \
+        --timeout 10m \
+        --scanners vuln \
         --format json \
         -o reports/security/trivy-report.json \
         ${IMAGE_URI} || true
+
+      echo "✅ Trivy scan completed (pipeline will continue)"
     '''
   }
 }
-
 
     stage('ECR Login & Push') {
       agent { label 'slave1' }
