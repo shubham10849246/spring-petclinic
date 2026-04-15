@@ -192,18 +192,17 @@ pipeline {
 }
 }
 
-
-    stage('ArgoCD Sync Validation (Non-Blocking)') {
+   stage('ArgoCD Sync Validation (Non-Blocking)') {
   agent { label 'slave2' }
   steps {
     sh '''
       set +e
       ARGOCD_SERVER="13.126.183.105:31567"
 
-      echo "Validating ArgoCD sync (non-blocking)..."
+      echo "Running ArgoCD validation (non-blocking)..."
 
       if ! command -v argocd >/dev/null 2>&1; then
-        echo "⚠️ argocd CLI not installed, skipping validation"
+        echo "⚠️ argocd CLI not available. Skipping."
         exit 0
       fi
 
@@ -213,18 +212,18 @@ pipeline {
         -o json 2>/dev/null || true)
 
       if [ -z "$APP_STATUS" ]; then
-        echo "⚠️ No permission to read ArgoCD app or app not accessible"
-        echo "✅ Pipeline continues safely"
+        echo "⚠️ No permission or app not accessible"
+        echo "✅ Pipeline continues (expected behavior)"
         exit 0
       fi
 
-      HEALTH=$(echo "$APP_STATUS" | jq -r '.status.health.status' 2>/dev/null)
-      SYNC=$(echo "$APP_STATUS" | jq -r '.status.sync.status' 2>/dev/null)
+      HEALTH=$(echo "$APP_STATUS" | jq -r '.status.health.status')
+      SYNC=$(echo "$APP_STATUS" | jq -r '.status.sync.status')
 
       echo "Health: $HEALTH"
       echo "Sync: $SYNC"
 
-      echo "✅ ArgoCD validation stage completed (non-blocking)"
+      echo "✅ ArgoCD validation completed safely"
     '''
   }
 }
