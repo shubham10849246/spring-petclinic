@@ -156,34 +156,7 @@ pipeline {
   }
 }
 
-    stage('Update GitOps Repo (Image Tag)') {
-  agent { label 'slave2' }
-  steps {
-    withCredentials([usernamePassword(
-      credentialsId: 'github-creds',
-      usernameVariable: 'GIT_USER',
-      passwordVariable: 'GIT_PASS'
-    )]) {
-      sh '''
-        set -e
-        rm -rf gitops
-        git clone https://$GIT_USER:$GIT_PASS@github.com/shubham10849246/petclinic-gitops.git
-        cd petclinic-gitops/k8s
-
-        sed -i "s|image: .*|image: ${IMAGE_URI}|g" deployment.yaml
-
-        git config user.email "jenkins@ci.com"
-        git config user.name "jenkins-ci"
-
-        git add deployment.yaml
-        git commit -m "Update image to ${IMAGE_URI}"
-        git push
-      '''
-    }
-  }
-}
-
-    stage('ECR Login & Push') {
+        stage('ECR Login & Push') {
       agent { label 'slave1' }
       steps {
         sh '''
@@ -200,6 +173,33 @@ pipeline {
       }
     }
 
+
+    stage('Update GitOps Repo (Image Tag)') {
+  agent { label 'slave2' }
+  steps {
+    withCredentials([usernamePassword(
+      credentialsId: 'github-creds',
+      usernameVariable: 'GIT_USER',
+      passwordVariable: 'GIT_PASS'
+    )]) {
+      sh '''
+        set -e
+        rm -rf gitops
+        git clone https://$GIT_USER:$GIT_PASS@github.com/shubham10849246/petclinic-gitops.git
+        cd petclinic-gitops/petclinic
+
+        sed -i "s|image: .*|image: ${IMAGE_URI}|g" deployment.yaml
+
+        git config user.email "jenkins@ci.com"
+        git config user.name "jenkins-ci"
+
+        git add deployment.yaml
+        git commit -m "Update image to ${IMAGE_URI}"
+        git push
+      '''
+    }
+  }
+}
 
 
     stage('Post-Deploy Smoke Test') {
