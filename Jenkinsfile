@@ -156,6 +156,33 @@ pipeline {
   }
 }
 
+    stage('Update GitOps Repo (Image Tag)') {
+  agent { label 'slave2' }
+  steps {
+    withCredentials([usernamePassword(
+      credentialsId: 'github-creds',
+      usernameVariable: 'GIT_USER',
+      passwordVariable: 'GIT_PASS'
+    )]) {
+      sh '''
+        set -e
+        rm -rf gitops
+        git clone https://$GIT_USER:$GIT_PASS@github.com/shubham10849246/petclinic-gitops.git
+        cd petclinic-gitops/k8s
+
+        sed -i "s|image: .*|image: ${IMAGE_URI}|g" deployment.yaml
+
+        git config user.email "jenkins@ci.com"
+        git config user.name "jenkins-ci"
+
+        git add deployment.yaml
+        git commit -m "Update image to ${IMAGE_URI}"
+        git push
+      '''
+    }
+  }
+}
+
     stage('ECR Login & Push') {
       agent { label 'slave1' }
       steps {
@@ -173,60 +200,6 @@ pipeline {
       }
     }
 
-    
-    stage('Update GitOps Repo (Image Tag)') {
-      agent { label 'slave2' }
-      steps {
-        echo "Update GitOps manifests to use ${IMAGE_URI} and push to Git."
-        // Example (uncomment & configure your Git credentials + repo):
-        // sh '''
-        //   git clone https://github.com/shubham10849246/petclinic-gitops.git gitops
-        //   cd gitops
-        //   sed -i "s|image: .*|image: ${IMAGE_URI}|g" k8s/deployment.yaml
-        //   git add k8s/deployment.yaml
-        //   git commit -m "Update image to ${IMAGE_URI}"
-        //   git push
-        // '''
-      }
-    }
-}
-}
-
-   stage('ArgoCD Sync Validation (Non-Blocking)') {
-  agent { label 'slave2' }
-  steps {
-    sh '''
-      set +e
-      ARGOCD_SERVER="13.126.183.105:31567"
-
-      echo "Running ArgoCD validation (non-blocking)..."
-
-      if ! command -v argocd >/dev/null 2>&1; then
-        echo "⚠️ argocd CLI not available. Skipping."
-        exit 0
-      fi
-
-      APP_STATUS=$(argocd app get spring-petclinic \
-        --server ${ARGOCD_SERVER} \
-        --insecure \
-        -o json 2>/dev/null || true)
-
-      if [ -z "$APP_STATUS" ]; then
-        echo "⚠️ No permission or app not accessible"
-        echo "✅ Pipeline continues (expected behavior)"
-        exit 0
-      fi
-
-      HEALTH=$(echo "$APP_STATUS" | jq -r '.status.health.status')
-      SYNC=$(echo "$APP_STATUS" | jq -r '.status.sync.status')
-
-      echo "Health: $HEALTH"
-      echo "Sync: $SYNC"
-
-      echo "✅ ArgoCD validation completed safely"
-    '''
-  }
-}
 
 
     stage('Post-Deploy Smoke Test') {
