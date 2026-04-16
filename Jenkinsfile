@@ -188,7 +188,7 @@ pipeline {
         git clone https://$GIT_USER:$GIT_PASS@github.com/shubham10849246/petclinic-gitops.git
         cd petclinic-gitops/petclinic
 
-        sed -i "s|image: .*|image: ${IMAGE_URI}|g" deployment.yaml
+        sed -i "s|PLACEHOLDER|${IMAGE_TAG}|g" deployment.yaml
 
         git config user.email "jenkins@ci.com"
         git config user.name "jenkins-ci"
