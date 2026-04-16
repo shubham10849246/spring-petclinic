@@ -183,7 +183,7 @@ pipeline {
       passwordVariable: 'GIT_PASS'
     )]) {
       sh '''
-        set -e
+        set -eo pipefail
         rm -rf petclinic-gitops
         git clone https://$GIT_USER:$GIT_PASS@github.com/shubham10849246/petclinic-gitops.git
         cd petclinic-gitops/petclinic
@@ -194,7 +194,7 @@ pipeline {
         git config user.name "jenkins-ci"
 
         git add deployment.yaml
-        git commit -m "Update image to ${IMAGE_URI}"
+        git commit -m "Update image to ${IMAGE_URI}" || echo "No changes to commit"
         git push
       '''
     }
