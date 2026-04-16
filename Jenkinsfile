@@ -184,7 +184,7 @@ pipeline {
     )]) {
       sh '''
         set -e
-        rm -rf gitops
+        rm -rf petclinic-gitops
         git clone https://$GIT_USER:$GIT_PASS@github.com/shubham10849246/petclinic-gitops.git
         cd petclinic-gitops/petclinic
 
